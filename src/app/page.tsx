@@ -4,14 +4,13 @@ import { useState } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { DrawingCanvas } from "@/components/DrawingCanvas";
 import { PreviewPanel } from "@/components/PreviewPanel";
-import { RefinePanel } from "@/components/RefinePanel";
 import { toast } from "sonner";
 
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState("");
   const [canvasData, setCanvasData] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [prompt, setPrompt] = useState("");
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
 
@@ -26,6 +25,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           imageBase64: canvasData,
+          previousCode: htmlCode || undefined,
+          prompt: prompt.trim() || undefined
         }),
       });
 
@@ -36,7 +37,6 @@ export default function Home() {
 
       const data = await response.json();
       setHtmlCode(data.code); // Store HTML code for refinement and preview
-
       toast.success("Website generated successfully!");
     } catch (error) {
       toast.error("Failed to generate website");
@@ -46,7 +46,8 @@ export default function Home() {
     }
   };
 
-  const handleRefine = async (refinement: string) => {
+  // Commented out as we're using single button approach that handles both generation and updates
+  /*const handleRefine = async (refinement: string) => {
     if (!canvasData || !htmlCode) {
       toast.error("Please generate a website first");
       return;
@@ -81,7 +82,7 @@ export default function Home() {
     } finally {
       setIsUpdating(false);
     }
-  };
+  };*/
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -99,17 +100,29 @@ export default function Home() {
         {canvasFullscreen || previewFullscreen ? (
           <div className="h-full">
             {canvasFullscreen && (
-              <DrawingCanvas
-                onGenerate={handleGenerate}
-                isGenerating={isGenerating}
-                isFullscreen={canvasFullscreen}
-                onToggleFullscreen={() => setCanvasFullscreen(false)}
-              />
+              <div className="flex flex-col h-full gap-3">
+                <div className="flex-1">
+                  <DrawingCanvas
+                    onGenerate={handleGenerate}
+                    isGenerating={isGenerating}
+                    isFullscreen={canvasFullscreen}
+                    onToggleFullscreen={() => setCanvasFullscreen(false)}
+                  />
+                </div>
+                <div className="w-full px-4 pb-4">
+                  <textarea
+                    placeholder="Describe any specific requirements for your website..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="w-full p-3 h-24 rounded-lg border border-border bg-card text-sm resize-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
             )}
             {previewFullscreen && (
               <PreviewPanel
                 htmlCode={htmlCode}
-                isLoading={isGenerating || isUpdating}
+                isLoading={isGenerating}
                 isFullscreen={previewFullscreen}
                 onToggleFullscreen={() => setPreviewFullscreen(false)}
               />
@@ -118,12 +131,25 @@ export default function Home() {
         ) : (
           <ResizablePanelGroup direction="horizontal" className="h-full gap-3">
             <ResizablePanel defaultSize={45} minSize={30}>
-              <DrawingCanvas
-                onGenerate={handleGenerate}
-                isGenerating={isGenerating}
-                isFullscreen={canvasFullscreen}
-                onToggleFullscreen={() => setCanvasFullscreen(true)}
-              />
+              <div className="flex flex-col h-full gap-3">
+                <div className="flex-1">
+                  <DrawingCanvas
+                    onGenerate={handleGenerate}
+                    isGenerating={isGenerating}
+                    isFullscreen={canvasFullscreen}
+                    onToggleFullscreen={() => setCanvasFullscreen(true)}
+                  />
+                </div>
+                {/* Prompt Input */}
+                <div className="w-full px-4 pb-4">
+                  <textarea
+                    placeholder="Describe any specific requirements for your website..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="w-full p-3 h-24 rounded-lg border border-border bg-card text-sm resize-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </div>
             </ResizablePanel>
 
             <ResizableHandle className="w-px bg-border hover:bg-primary/50 transition-colors" />
@@ -131,7 +157,7 @@ export default function Home() {
             <ResizablePanel defaultSize={55} minSize={30}>
               <PreviewPanel
                 htmlCode={htmlCode}
-                isLoading={isGenerating || isUpdating}
+                isLoading={isGenerating}
                 isFullscreen={previewFullscreen}
                 onToggleFullscreen={() => setPreviewFullscreen(true)}
               />
@@ -140,10 +166,10 @@ export default function Home() {
         )}
       </div>
 
-      {/* Refine Panel */}
+      {/* Refine Panel - Commented out as we're using single button approach
       {!canvasFullscreen && !previewFullscreen && (
         <RefinePanel onRefine={handleRefine} isUpdating={isUpdating} />
-      )}
+      )} */}
     </div>
   );
 }

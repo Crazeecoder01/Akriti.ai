@@ -5,9 +5,17 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY || "",
 });
 
-const SYSTEM_PROMPT = `
+
+const getSystemPrompt = (previousCode?: string, prompt?: string) => `
 You are an expert frontend developer specializing in HTML, CSS, and modern web design.
-Your task is to analyze the provided screenshot of a website sketch and generate the corresponding HTML page.
+Your task is to ${previousCode ? 'update the existing code based on the new sketch while maintaining functionality' : 'analyze the provided screenshot of a website sketch and generate'} the corresponding HTML page.
+
+${previousCode ? `
+Here is the existing code to modify:
+${previousCode}
+
+Please maintain the overall structure and functionality while updating the design based on the new sketch.
+` : ''}
 
 Rules:
 1. **Output ONLY a complete HTML document.** Start with <!DOCTYPE html> and include all necessary tags.
@@ -20,6 +28,11 @@ Rules:
 8. **Include inline JavaScript** if needed for basic interactivity (like modals, dropdowns, etc.)
 9. **Do NOT include any markdown code fences** or explanatory text - just the HTML.
 
+${prompt ? `User Requirements:
+${prompt}
+
+Please incorporate these requirements while generating/updating the page.` : ''}
+
 Now, generate the complete HTML page for this sketch.
 `;
 
@@ -29,12 +42,21 @@ export const maxDuration = 60; // Maximum function duration in seconds
 
 interface GenerateRequestBody {
   imageBase64: string;
+  previousCode?: string;
+  prompt?: string;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: GenerateRequestBody = await req.json();
-    const { imageBase64 } = body;
+    const { imageBase64, previousCode, prompt } = body;
+
+    if(previousCode){
+      console.log("HERE IS THE LOGS::", previousCode);
+    }
+    if(!previousCode){
+      console.log("No previous code provided.");
+    }
 
     if (!imageBase64) {
       return NextResponse.json(
@@ -60,7 +82,7 @@ export async function POST(req: NextRequest) {
             data: base64Data,
           },
         },
-        { text: SYSTEM_PROMPT },
+        { text: getSystemPrompt(previousCode, prompt) },
       ],
     });
 

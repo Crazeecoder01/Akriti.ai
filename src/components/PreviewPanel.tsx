@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Code2, Eye, Maximize2, Minimize2, Loader2 } from "lucide-react";
+import { Code2, Eye, Maximize2, Minimize2, Loader2, Copy, Check } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { toast } from "sonner";
 
 interface PreviewPanelProps {
   htmlCode: string;
@@ -20,6 +21,20 @@ export function PreviewPanel({
   onToggleFullscreen,
 }: PreviewPanelProps) {
   const [showCode, setShowCode] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!htmlCode) return;
+    
+    try {
+      await navigator.clipboard.writeText(htmlCode);
+      setIsCopied(true);
+      toast.success("Code copied to clipboard!");
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy code");
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-card rounded-lg border border-border overflow-hidden">
@@ -27,6 +42,19 @@ export function PreviewPanel({
       <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">Preview</h2>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCopy}
+            className="h-8 w-8"
+            disabled={!htmlCode}
+          >
+            {isCopied ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
           <Button
             variant="ghost"
             size="icon"

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Tldraw, Editor, TLUiOverrides } from "tldraw";
+import { useState, useRef } from "react";
+import { Tldraw, Editor, TLRecord } from "tldraw";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Maximize2, Minimize2 } from "lucide-react";
 import "tldraw/tldraw.css";
@@ -13,6 +13,9 @@ interface DrawingCanvasProps {
   onToggleFullscreen: () => void;
 }
 
+// Store canvas state outside component to persist across remounts
+let persistedSnapshot: TLRecord[] | null = null;
+
 export function DrawingCanvas({
   onGenerate,
   isGenerating,
@@ -23,6 +26,13 @@ export function DrawingCanvas({
 
   const handleGenerate = async () => {
     if (!editor) return;
+
+    // Save current state before generating
+    try {
+      persistedSnapshot = editor.store.allRecords();
+    } catch (error) {
+      console.error('Error saving canvas state:', error);
+    }
 
     try {
       // Get all shapes from the canvas
@@ -57,6 +67,18 @@ export function DrawingCanvas({
     }
   };
 
+  const handleToggleFullscreen = () => {
+    // Save current state before toggling
+    if (editor) {
+      try {
+        persistedSnapshot = editor.store.allRecords();
+      } catch (error) {
+        console.error('Error saving canvas state:', error);
+      }
+    }
+    onToggleFullscreen();
+  };
+
   return (
     <div className="h-full flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       {/* Header */}
@@ -65,7 +87,7 @@ export function DrawingCanvas({
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggleFullscreen}
+          onClick={handleToggleFullscreen}
           className="h-8 w-8"
         >
           {isFullscreen ? (
@@ -79,7 +101,17 @@ export function DrawingCanvas({
       {/* Canvas */}
       <div className="flex-1 relative">
         <Tldraw
-          onMount={(editor) => setEditor(editor)}
+          onMount={(editor) => {
+            setEditor(editor);
+            // Restore the previous state if it exists
+            if (persistedSnapshot && persistedSnapshot.length > 0) {
+              try {
+                editor.store.put(persistedSnapshot);
+              } catch (error) {
+                console.error('Error restoring canvas state:', error);
+              }
+            }
+          }}
           autoFocus
         />
       </div>

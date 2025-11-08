@@ -1,17 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Code2, Eye, Maximize2, Minimize2, Loader2, Copy, Check } from "lucide-react";
+import { Code2, Eye, Maximize2, Minimize2, Loader2, Copy, Check, MousePointerClick } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { toast } from "sonner";
+import { getInspectorScript } from "@/lib/element-inspector";
+
+export interface SelectedElement {
+  html: string;
+  selector: string;
+  tagName: string;
+  textContent: string;
+}
 
 interface PreviewPanelProps {
   htmlCode: string;
   isLoading: boolean;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  onElementSelected?: (element: SelectedElement) => void;
 }
 
 export function PreviewPanel({
@@ -19,9 +28,56 @@ export function PreviewPanel({
   isLoading,
   isFullscreen,
   onToggleFullscreen,
+  onElementSelected,
 }: PreviewPanelProps) {
   const [showCode, setShowCode] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isInspectorActive, setIsInspectorActive] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Inject inspector script into HTML
+  const getEnhancedHtml = (html: string) => {
+    if (!html) return html;
+    
+    const inspectorScript = getInspectorScript();
+    
+    // Inject before closing body tag, or at the end if no body tag
+    if (html.includes('</body>')) {
+      return html.replace('</body>', `${inspectorScript}</body>`);
+    } else {
+      return html + inspectorScript;
+    }
+  };
+
+  // Handle messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'ELEMENT_SELECTED') {
+        if (onElementSelected) {
+          onElementSelected(event.data.data);
+          toast.success("Element selected!");
+        }
+      }
+      
+      if (event.data.type === 'INSPECTOR_STATE_CHANGED') {
+        setIsInspectorActive(event.data.active);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onElementSelected]);
+
+  // Toggle inspector mode
+  const toggleInspector = () => {
+    if (iframeRef.current?.contentWindow) {
+      const newState = !isInspectorActive;
+      iframeRef.current.contentWindow.postMessage({
+        type: 'TOGGLE_INSPECTOR',
+        active: newState
+      }, '*');
+    }
+  };
 
   const handleCopy = async () => {
     if (!htmlCode) return;
@@ -42,6 +98,16 @@ export function PreviewPanel({
       <div className="flex items-center justify-between px-4 py-2 bg-card border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">Preview</h2>
         <div className="flex items-center gap-2">
+          <Button
+            variant={isInspectorActive ? "default" : "ghost"}
+            size="icon"
+            onClick={toggleInspector}
+            className="h-8 w-8"
+            disabled={!htmlCode || showCode}
+            title="Select Element"
+          >
+            <MousePointerClick className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -122,7 +188,8 @@ export function PreviewPanel({
           </div>
         ) : (
           <iframe
-            srcDoc={htmlCode}
+            ref={iframeRef}
+            srcDoc={getEnhancedHtml(htmlCode)}
             className="w-full h-full border-0 bg-white"
             title="Website Preview"
             sandbox="allow-scripts allow-same-origin allow-forms"

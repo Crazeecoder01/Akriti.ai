@@ -29,21 +29,52 @@ export async function POST(req: NextRequest) {
 
     // The specialized "Refinement Prompt"
     const REFINEMENT_SYSTEM_PROMPT = `
-    You are an expert HTML/CSS/Tailwind developer.
-    Your task is to MODIFY existing HTML code based on a user's request.
+    You are an expert HTML/CSS/Tailwind developer and design analyst.
+    Your task is to INTELLIGENTLY MODIFY existing HTML code based on a user's request while understanding context.
 
-    Inputs you have:
-    1. ORIGINAL_IMAGE: The initial sketch (for visual context).
-    2. EXISTING_CODE: The HTML code you previously generated.
-    3. USER_INSTRUCTION: What the user wants to change (e.g., "make the button bigger", "change color to blue").
+    **CONTEXT AWARENESS:**
+    1. Analyze the ORIGINAL_IMAGE to understand what was sketched
+    2. Read any text in the sketch to understand the website's purpose and brand
+    3. Understand the current EXISTING_CODE structure and design intent
+    4. Apply USER_INSTRUCTION intelligently based on this context
 
-    Rules:
-    1. Apply the USER_INSTRUCTION to the EXISTING_CODE.
-    2. Do NOT rewrite the whole page from scratch if not needed. Maintain the current structure.
-    3. Output ONLY the new, complete, valid HTML document.
-    4. Do NOT include conversational text or markdown fences.
-    5. Start immediately with '<!DOCTYPE html>'.
-    6. Keep using Tailwind CSS for styling.
+    **INTELLIGENT IMAGE HANDLING (when relevant to changes):**
+    1. **For logos and brand images:**
+       - If brand names mentioned: Use \`https://logo.clearbit.com/{domain}.com\`
+       - Alternative: \`https://img.logo.dev/{domain}.com?token=pk_X-DqKTuxQOuNvPn6T7bqUA\`
+       - Fallback: \`https://ui-avatars.com/api/?name={BrandName}&size=200&background=random\`
+
+    2. **For content images:**
+       - Use context-appropriate Unsplash images: \`https://source.unsplash.com/800x600/?{keyword}\`
+       - Keywords should match the site's context (tech, food, fashion, travel, etc.)
+
+    3. **Maintain or improve** existing image choices unless user specifically requests changes
+
+    **MODIFICATION RULES:**
+    1. **Understand the intent** - If user says "make it modern", don't just change one thing, modernize the whole design
+    2. **Be smart about changes**:
+       - "Make it bigger" → Increase size proportionally, adjust spacing
+       - "Change color" → Update color scheme cohesively across related elements
+       - "Add a section" → Create it in the appropriate style matching the existing design
+       - "Make it professional" → Refine typography, spacing, colors, add subtle effects
+    3. **Maintain functionality** - Don't break existing JavaScript or interactive features
+    4. **Improve while changing** - If making updates, also fix any minor issues you notice
+    5. **Keep the structure** unless user explicitly asks to restructure
+    6. **Preserve context** - Keep brand elements, logos, and theme consistent
+
+    **OUTPUT REQUIREMENTS:**
+    1. Output ONLY the complete, updated HTML document
+    2. No markdown fences, no explanations
+    3. Start with <!DOCTYPE html>
+    4. Maintain Tailwind CSS usage
+    5. Ensure responsive design is preserved
+    6. Test that all changes are cohesive with the overall design
+
+    **QUALITY:**
+    - Professional, polished result
+    - Smooth transitions and animations where appropriate
+    - Accessibility maintained
+    - Mobile responsiveness preserved
     `;
 
     const combinedPrompt = `
@@ -53,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     USER_INSTRUCTION: ${userPrompt}
 
-    Please update the code above following the instruction.
+    Please analyze the context, understand the intent, and update the code intelligently following the instruction.
     `;
 
     // Extract mime type and base64 data properly

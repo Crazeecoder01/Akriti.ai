@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { DrawingCanvas } from "@/components/DrawingCanvas";
-import { PreviewPanel } from "@/components/PreviewPanel";
+import { PreviewPanel, SelectedElement } from "@/components/PreviewPanel";
+import { ElementEditor } from "@/components/ElementEditor";
 import { toast } from "sonner";
 
 export default function Home() {
@@ -13,6 +14,10 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
+  
+  // Element editing state
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
+  const [isEditingElement, setIsEditingElement] = useState(false);
 
   const handleGenerate = async (canvasData: string) => {
     setIsGenerating(true);
@@ -43,6 +48,49 @@ export default function Home() {
       console.error(error);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleElementSelected = (element: SelectedElement) => {
+    setSelectedElement(element);
+  };
+
+  const handleCloseElementEditor = () => {
+    setSelectedElement(null);
+  };
+
+  const handleApplyElementEdit = async (userPrompt: string) => {
+    if (!selectedElement || !htmlCode) return;
+
+    setIsEditingElement(true);
+    try {
+      const response = await fetch('/api/edit-element', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          previousCode: htmlCode,
+          selectedElementHTML: selectedElement.html,
+          userPrompt: userPrompt,
+          imageBase64: canvasData || undefined, // Optional context
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to edit element');
+      }
+
+      const data = await response.json();
+      setHtmlCode(data.code);
+      setSelectedElement(null);
+      toast.success("Element updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update element");
+      console.error(error);
+    } finally {
+      setIsEditingElement(false);
     }
   };
 
@@ -125,6 +173,7 @@ export default function Home() {
                 isLoading={isGenerating}
                 isFullscreen={previewFullscreen}
                 onToggleFullscreen={() => setPreviewFullscreen(false)}
+                onElementSelected={handleElementSelected}
               />
             )}
           </div>
@@ -155,12 +204,25 @@ export default function Home() {
             <ResizableHandle className="w-px bg-border hover:bg-primary/50 transition-colors" />
 
             <ResizablePanel defaultSize={55} minSize={30}>
-              <PreviewPanel
-                htmlCode={htmlCode}
-                isLoading={isGenerating}
-                isFullscreen={previewFullscreen}
-                onToggleFullscreen={() => setPreviewFullscreen(true)}
-              />
+              <div className="relative h-full">
+                <PreviewPanel
+                  htmlCode={htmlCode}
+                  isLoading={isGenerating}
+                  isFullscreen={previewFullscreen}
+                  onToggleFullscreen={() => setPreviewFullscreen(true)}
+                  onElementSelected={handleElementSelected}
+                />
+                
+                {/* Element Editor Overlay */}
+                {selectedElement && (
+                  <ElementEditor
+                    selectedElement={selectedElement}
+                    onClose={handleCloseElementEditor}
+                    onApplyEdit={handleApplyElementEdit}
+                    isEditing={isEditingElement}
+                  />
+                )}
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         )}

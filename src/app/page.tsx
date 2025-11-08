@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState("");
-  const [reactCode, setReactCode] = useState("");
   const [canvasData, setCanvasData] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -36,36 +35,8 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setReactCode(data.code); // Store React code for refinement
-      
-      // Convert the React component code to HTML
-      const htmlCode = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generated Website</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel">
-    ${data.code}
-    
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
-</body>
-</html>`;
+      setHtmlCode(data.code); // Store HTML code for refinement and preview
 
-      setHtmlCode(htmlCode);
       toast.success("Website generated successfully!");
     } catch (error) {
       toast.error("Failed to generate website");
@@ -76,7 +47,7 @@ export default function Home() {
   };
 
   const handleRefine = async (refinement: string) => {
-    if (!canvasData || !reactCode) {
+    if (!canvasData || !htmlCode) {
       toast.error("Please generate a website first");
       return;
     }
@@ -90,7 +61,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           imageBase64: canvasData,
-          previousCode: reactCode,
+          previousCode: htmlCode,
           userPrompt: refinement,
         }),
       });
@@ -101,36 +72,8 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setReactCode(data.code); // Update React code
-      
-      // Convert the refined React component code to HTML
-      const htmlCode = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Generated Website</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel">
-    ${data.code}
-    
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
-</body>
-</html>`;
+      setHtmlCode(data.code); // Update HTML code
 
-      setHtmlCode(htmlCode);
       toast.success("Website updated!");
     } catch (error) {
       toast.error("Failed to update website");

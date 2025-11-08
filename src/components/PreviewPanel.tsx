@@ -95,9 +95,9 @@ export function PreviewPanel({
         ) : (
           <iframe
             srcDoc={htmlCode}
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 bg-white"
             title="Website Preview"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin allow-forms"
           />
         )}
       </div>

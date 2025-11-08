@@ -29,20 +29,21 @@ export async function POST(req: NextRequest) {
 
     // The specialized "Refinement Prompt"
     const REFINEMENT_SYSTEM_PROMPT = `
-    You are an expert React/Tailwind developer.
-    Your task is to MODIFY existing code based on a user's request.
+    You are an expert HTML/CSS/Tailwind developer.
+    Your task is to MODIFY existing HTML code based on a user's request.
 
     Inputs you have:
     1. ORIGINAL_IMAGE: The initial sketch (for visual context).
-    2. EXISTING_CODE: The code you previously generated.
-    3. USER_INSTRUCTION: What the user wants to change (e.g., "make the button bigger").
+    2. EXISTING_CODE: The HTML code you previously generated.
+    3. USER_INSTRUCTION: What the user wants to change (e.g., "make the button bigger", "change color to blue").
 
     Rules:
     1. Apply the USER_INSTRUCTION to the EXISTING_CODE.
-    2. Do NOT rewrite the whole app from scratch if not needed. Maintain the current structure.
-    3. Output ONLY the new, complete, valid JSX code for the component.
+    2. Do NOT rewrite the whole page from scratch if not needed. Maintain the current structure.
+    3. Output ONLY the new, complete, valid HTML document.
     4. Do NOT include conversational text or markdown fences.
-    5. Start immediately with 'export default function'.
+    5. Start immediately with '<!DOCTYPE html>'.
+    6. Keep using Tailwind CSS for styling.
     `;
 
     const combinedPrompt = `
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     let cleanCode = text;
-    const codeBlockRegex = /```(?:jsx|js|javascript)?\n?([\s\S]*?)```/;
+    const codeBlockRegex = /```(?:html)?\n?([\s\S]*?)```/;
     const match = text.match(codeBlockRegex);
     if (match && match[1]) {
       cleanCode = match[1].trim();

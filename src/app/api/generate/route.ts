@@ -6,19 +6,21 @@ const ai = new GoogleGenAI({
 });
 
 const SYSTEM_PROMPT = `
-You are an expert frontend developer specializing in React and Tailwind CSS.
-Your task is to analyze the provided screenshot of a website sketch and generate the corresponding React component.
+You are an expert frontend developer specializing in HTML, CSS, and modern web design.
+Your task is to analyze the provided screenshot of a website sketch and generate the corresponding HTML page.
 
 Rules:
-1. **Output ONLY code.** Do not include any conversational text, explanations, or markdown code fences (\`\`\`jsx). start immediately with \`export default function\`.
-2. **Use Tailwind CSS** for all styling. Try to match the layout, spacing, and visual hierarchy of the sketch as closely as possible.
+1. **Output ONLY a complete HTML document.** Start with <!DOCTYPE html> and include all necessary tags.
+2. **Use Tailwind CSS** (loaded from CDN) for all styling. Try to match the layout, spacing, and visual hierarchy of the sketch as closely as possible.
 3. **Use placeholder images** (e.g., \`https://placehold.co/600x400\`) for any image rectangles in the sketch.
 4. **Use meaningful placeholder text** (Lorem Ipsum) for text areas.
-5. **Single Component:** Everything must fit into one functional React component.
-6. **Icons:** If you see icons, use simple emojis or standard SVG icons if you can conform them to standard lucide-react names, but emojis are safer for a standalone component.
-7. **Interactive Elements:** Style buttons and inputs clearly to look interactive.
+5. **Complete HTML Document:** Include proper <head> with meta tags, Tailwind CSS CDN, and any necessary styles.
+6. **Responsive Design:** Make it mobile-friendly with proper viewport settings.
+7. **Interactive Elements:** Style buttons, links, and inputs to look interactive and functional.
+8. **Include inline JavaScript** if needed for basic interactivity (like modals, dropdowns, etc.)
+9. **Do NOT include any markdown code fences** or explanatory text - just the HTML.
 
-Now, generate the React code for this sketch.
+Now, generate the complete HTML page for this sketch.
 `;
 
 // Next.js 16 App Router - increase body size limit
@@ -71,7 +73,8 @@ export async function POST(req: NextRequest) {
 
     let cleanCode = text;
     
-    const codeBlockRegex = /```(?:jsx|js|javascript)?\n?([\s\S]*?)```/;
+    // Remove markdown code fences if present
+    const codeBlockRegex = /```(?:html)?\n?([\s\S]*?)```/;
     const match = text.match(codeBlockRegex);
 
     if (match && match[1]) {
@@ -82,12 +85,12 @@ export async function POST(req: NextRequest) {
       console.log("⚠️ No markdown fences found, using raw output.");
     }
 
-    if (!cleanCode.startsWith("export default")) {
-      console.warn("🚨 Warning: Generated code might not be a valid component.");
+    if (!cleanCode.toLowerCase().includes('<!doctype html>')) {
+      console.warn("🚨 Warning: Generated code might not be a valid HTML document.");
     }
 
     // Send success response
-    return NextResponse.json({ code: text }, { status: 200 });
+    return NextResponse.json({ code: cleanCode }, { status: 200 });
 
   } catch (error) {
     console.error("❌ Generative AI Error:", error);

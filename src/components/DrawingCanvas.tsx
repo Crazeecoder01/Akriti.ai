@@ -33,23 +33,24 @@ export function DrawingCanvas({
         return;
       }
 
-      // Export the canvas as SVG and convert to image
-      const svg = await editor.getSvgString(
-        Array.from(editor.getCurrentPageShapeIds())
-      );
+      // Export the canvas as png and convert to image
+      const png = await editor.toImage(shapes, {
+        background: true,
+        format: "png",
+        scale: 2
+      })
 
-      if (!svg) {
+      if (!png) {
         throw new Error("Failed to export canvas");
       }
 
-      // Convert SVG to data URL
-      const svgBlob = new Blob([svg.svg], { type: "image/svg+xml" });
+      // Convert png blob to data URL
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64data = reader.result as string;
         onGenerate(base64data);
       };
-      reader.readAsDataURL(svgBlob);
+      reader.readAsDataURL(png.blob);
     } catch (error) {
       console.error("Error exporting canvas:", error);
       alert("Failed to export canvas. Please try again.");

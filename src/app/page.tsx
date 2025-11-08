@@ -9,6 +9,8 @@ import { toast } from "sonner";
 
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState("");
+  const [reactCode, setReactCode] = useState("");
+  const [canvasData, setCanvasData] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
@@ -16,74 +18,54 @@ export default function Home() {
 
   const handleGenerate = async (canvasData: string) => {
     setIsGenerating(true);
+    setCanvasData(canvasData); // Store canvas data for refinement
     try {
-      // TODO: Integrate with AI API (Google Gemini or similar)
-      // For now, simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageBase64: canvasData,
+        }),
+      });
 
-      const mockHTML = `
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate code');
+      }
+
+      const data = await response.json();
+      setReactCode(data.code); // Store React code for refinement
+      
+      // Convert the React component code to HTML
+      const htmlCode = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generated Website</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-    }
-    .container {
-      text-align: center;
-      padding: 2rem;
-      max-width: 800px;
-    }
-    h1 {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      animation: fadeIn 1s ease-in;
-    }
-    p {
-      font-size: 1.25rem;
-      opacity: 0.9;
-      margin-bottom: 2rem;
-    }
-    button {
-      background: white;
-      color: #667eea;
-      border: none;
-      padding: 1rem 2rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform 0.2s;
-    }
-    button:hover {
-      transform: scale(1.05);
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Welcome to Your Website</h1>
-    <p>This is a beautiful landing page generated from your sketch!</p>
-    <button onclick="alert('Button clicked!')">Get Started</button>
-  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    ${data.code}
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
 </body>
 </html>`;
 
-      setHtmlCode(mockHTML);
+      setHtmlCode(htmlCode);
       toast.success("Website generated successfully!");
     } catch (error) {
       toast.error("Failed to generate website");
@@ -94,10 +76,61 @@ export default function Home() {
   };
 
   const handleRefine = async (refinement: string) => {
+    if (!canvasData || !reactCode) {
+      toast.error("Please generate a website first");
+      return;
+    }
+
     setIsUpdating(true);
     try {
-      // TODO: Integrate with AI API for refinement
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch('/api/refine', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageBase64: canvasData,
+          previousCode: reactCode,
+          userPrompt: refinement,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to refine code');
+      }
+
+      const data = await response.json();
+      setReactCode(data.code); // Update React code
+      
+      // Convert the refined React component code to HTML
+      const htmlCode = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generated Website</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    ${data.code}
+    
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>`;
+
+      setHtmlCode(htmlCode);
       toast.success("Website updated!");
     } catch (error) {
       toast.error("Failed to update website");

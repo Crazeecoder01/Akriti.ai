@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { DrawingCanvas } from "@/components/DrawingCanvas";
 import Aurora from "@/components/Aurora";
@@ -156,9 +157,16 @@ export default function Home() {
           />
         </div>
         <div className="container mx-auto px-6 py-3 relative z-10">
-          <h1 className="text-xl font-bold text-white drop-shadow-lg">
-            Akriti.ai
-          </h1>
+          <div className="flex items-center">
+            <Image 
+              src="/Logo.png"
+              alt="Akriti.ai Logo"
+              width={120}
+              height={36}
+              className="drop-shadow-lg"
+              priority
+            />
+          </div>
         </div>
       </header>
 
@@ -213,9 +221,9 @@ export default function Home() {
                   />
                 </div>
                 {/* Prompt Input */}
-                <div className="w-full px-4 pb-4">
+                <div className="w-full pb-4">
                   <textarea
-                    placeholder="Describe any specific requirements for your website..."
+                    placeholder="Describe any specific requirements for your website...(Optional)"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="w-full p-3 h-24 rounded-lg border border-border bg-card text-sm resize-none focus:ring-2 focus:ring-primary/20"

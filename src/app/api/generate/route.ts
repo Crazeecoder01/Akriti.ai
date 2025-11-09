@@ -91,9 +91,158 @@ const ai = new GoogleGenAI({
 
 // Next.js 16 App Router - increase body size limit
 
-const getSystemPrompt = (previousCode?: string, prompt?: string) => `
+const getSystemPrompt = (previousCode?: string, prompt?: string, mode: "strict" | "professional" = "professional") => `
 You are an expert Product Designer and Frontend Engineer (React/Tailwind).
-Your goal is to translate ${previousCode ? 'user feedback on an existing design' : 'a rough sketch/screenshot'} into a polished, production-ready landing page that feels like a real, live product.
+Your goal is to translate ${previousCode ? 'user feedback on an existing design' : 'a rough sketch/screenshot'} into a polished, production-ready ${mode === "strict" ? "HTML recreation of the exact drawing" : "landing page that feels like a real, live product"}.
+
+${mode === "strict" ? `
+**🎨 STRICT MODE - SIMPLE & FAITHFUL**
+
+Your task is to create a SIMPLE representation of what was drawn, with minimal interpretation.
+
+**STEP 1: DETECT IF IT'S A WEBSITE LAYOUT**
+- Does the drawing show website elements like: header/navbar, sections, buttons, forms, cards, footer?
+- Does it have text indicating website purpose (e.g., "Home", "About", "Contact", "Buy Now")?
+
+**IF IT LOOKS LIKE A WEBSITE LAYOUT:**
+- Create a VERY SIMPLE website preview
+- Use basic HTML structure matching the sketch layout
+- **NO IMAGES** - use colored placeholder divs instead
+- **NO fancy styling** - just basic Tailwind for layout
+- Match the general structure and text from the sketch
+- Keep colors simple (grays, one accent color)
+- Preserve the layout sections and hierarchy from the sketch
+- Example structure:
+  \`\`\`html
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <title>Simple Layout</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+      <!-- Simple navbar if sketch shows one -->
+      <nav class="bg-white border-b p-4">
+          <div class="container mx-auto">Simple Nav</div>
+      </nav>
+      
+      <!-- Hero/main section matching sketch -->
+      <section class="container mx-auto p-8">
+          <h1 class="text-4xl font-bold">Heading from sketch</h1>
+          <p class="text-gray-600">Text from sketch</p>
+          <!-- Use colored divs instead of images -->
+          <div class="w-full h-64 bg-gray-300 rounded"></div>
+      </section>
+      
+      <!-- Other sections matching sketch layout -->
+  </body>
+  </html>
+  \`\`\`
+
+**IF IT'S NOT A WEBSITE (drawing, art, diagram, etc.):**
+- Recreate EXACTLY what was drawn using SVG
+- Match colors, shapes, and positions precisely
+- NO additions, NO interpretations
+- Example structure:
+  \`\`\`html
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <meta charset="UTF-8">
+      <title>Drawing</title>
+      <style>
+          body { 
+              margin: 0; 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              min-height: 100vh; 
+              background: #f5f5f5; 
+          }
+      </style>
+  </head>
+  <body>
+      <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+          <!-- Recreate the exact drawing using SVG elements -->
+          <!-- Match exact colors, positions, sizes from the sketch -->
+      </svg>
+  </body>
+  </html>
+  \`\`\`
+
+**STRICT MODE RULES:**
+✅ Simple and minimal - no fancy effects
+✅ No real images - use colored divs/SVG shapes
+✅ Match the sketch layout/structure closely
+✅ Keep it clean and straightforward
+✅ Use exact text from the sketch
+❌ NO professional polish or enhancements
+❌ NO added features not in the sketch
+❌ NO real images or external assets
+
+${previousCode ? `
+EXISTING CODE TO MODIFY:
+${previousCode}
+Apply the requested changes while maintaining the simple, creative style.
+` : ''}
+
+${prompt ? `USER REQUIREMENTS: ${prompt}` : ''}
+
+` : `
+**🚨 CRITICAL FIRST STEP: INTENT DETECTION**
+
+Before doing ANYTHING, determine the PRIMARY INTENT of the drawing:
+
+**INTENT TYPE A: NON-WEBSITE DRAWINGS** (Illustrations, diagrams, art, doodles, flowcharts, mind maps, sketches of objects, nature, abstract art, etc.)
+- If the drawing is clearly NOT a website/app layout (e.g., a drawing of a cat, a flowchart, a diagram, a portrait, abstract art, etc.)
+- **DO NOT try to make it a website**
+- **DO NOT add website elements** (navbar, footer, hero sections, etc.)
+- **JUST RENDER EXACTLY WHAT WAS DRAWN** using HTML Canvas, SVG, or CSS to replicate the visual
+- Use HTML5 Canvas with JavaScript to recreate the drawing as faithfully as possible
+- Match colors, shapes, positions, and style exactly as drawn
+- NO interpretation, NO context inference, NO "professional polish" - just faithful reproduction
+- Example output: A simple HTML page with a canvas that draws the exact shapes/lines/colors from the input
+
+**INTENT TYPE B: WEBSITE/APP LAYOUTS** (Landing pages, dashboards, portfolios, e-commerce, etc.)
+- If the drawing shows clear website elements: headers, navigation, buttons, forms, sections, cards, etc.
+- OR if text indicates a website purpose (e.g., "Homepage", "Login", "Dashboard", "Buy Now")
+- Then proceed with the full website generation process below
+
+---
+
+**IF INTENT TYPE A (Non-Website Drawing) → OUTPUT:**
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }
+        canvas { border: 1px solid #ddd; background: white; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        // Recreate the exact drawing using canvas API
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
+        
+        // Draw exactly what was in the sketch (shapes, lines, colors, text)
+        // Example: ctx.fillStyle = 'red'; ctx.fillRect(100, 100, 200, 150);
+    </script>
+</body>
+</html>
+\`\`\`
+
+---
+
+**IF INTENT TYPE B (Website Layout) → PROCEED WITH FULL WEBSITE GENERATION:**
 
 **CRITICAL INSTRUCTION: INTERPRETATION OVER TRANSCRIPTION**
 - Do NOT just "digitize" the sketch. Upgrade it.
@@ -142,7 +291,8 @@ You MUST use realistic images that match the inferred context.
 ${prompt ? `USER OVERRIDE REQUIREMENTS: ${prompt}` : ''}
 
 **FINAL OUTPUT GENERATION:**
-Generate the complete HTML file now. It should look like it cost $5,000 to design.
+Generate the complete HTML file now. ${previousCode ? 'Apply only the requested changes.' : 'First detect intent (Type A or B), then generate accordingly. If Type B, it should look like it cost $5,000 to design.'}
+`}
 `;
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Maximum function duration in seconds
@@ -152,12 +302,13 @@ interface GenerateRequestBody {
   previousImageBase64?: string;  // Add this field for previous canvas data
   previousCode?: string;
   prompt?: string;
+  mode?: "strict" | "professional";
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: GenerateRequestBody = await req.json();
-    const { imageBase64, previousImageBase64, previousCode, prompt } = body;
+    const { imageBase64, previousImageBase64, previousCode, prompt, mode = "professional" } = body;
 
     // Detect canvas changes if we have previous data
     let detectedChanges: CanvasChange[] = [];
@@ -198,7 +349,7 @@ export async function POST(req: NextRequest) {
             data: base64Data,
           },
         },
-        { text: getSystemPrompt(previousCode, prompt) },
+        { text: getSystemPrompt(previousCode, prompt, mode) },
       ],
     });
 

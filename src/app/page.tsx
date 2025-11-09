@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { DrawingCanvas } from "@/components/DrawingCanvas";
+import Aurora from "@/components/Aurora";
 import { PreviewPanel, SelectedElement } from "@/components/PreviewPanel";
 import { ElementEditor } from "@/components/ElementEditor";
 import { toast } from "sonner";
@@ -136,9 +137,17 @@ export default function Home() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border bg-gradient-primary">
-        <div className="container mx-auto px-6 py-3">
-          <h1 className="text-xl font-bold text-white">
+      <header className="relative h-16 overflow-hidden">
+        <div className="absolute inset-0">
+          <Aurora
+            colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
+            blend={0.5}
+            amplitude={1.0}
+            speed={0.5}
+          />
+        </div>
+        <div className="container mx-auto px-6 py-3 relative z-10">
+          <h1 className="text-xl font-bold text-white drop-shadow-lg">
             Akriti.ai
           </h1>
         </div>

@@ -19,9 +19,9 @@ export default function Home() {
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
   const [isEditingElement, setIsEditingElement] = useState(false);
 
-  const handleGenerate = async (canvasData: string) => {
+  const handleGenerate = async (currentCanvasData: string, previousCanvasData?: string) => {
     setIsGenerating(true);
-    setCanvasData(canvasData); // Store canvas data for refinement
+    setCanvasData(currentCanvasData); // Store current canvas data for refinement
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
@@ -29,7 +29,8 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          imageBase64: canvasData,
+          imageBase64: currentCanvasData,
+          previousImageBase64: previousCanvasData,
           previousCode: htmlCode || undefined,
           prompt: prompt.trim() || undefined
         }),

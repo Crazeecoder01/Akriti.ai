@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Tldraw, Editor, TLRecord } from "tldraw";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Maximize2, Minimize2 } from "lucide-react";
+import { detectCanvasChanges } from "@/lib/canvasUtils";
 import "tldraw/tldraw.css";
 
 interface DrawingCanvasProps {
-  onGenerate: (canvasData: string) => void;
+  onGenerate: (canvasData: string, prevData?: string) => void;
   isGenerating: boolean;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
 }
 
-// Store canvas state outside component to persist across remounts
+// Store canvas states outside component to persist across remounts
 let persistedSnapshot: TLRecord[] | null = null;
+let previousCanvasData: string | null = null;
 
 export function DrawingCanvas({
   onGenerate,
@@ -26,13 +28,6 @@ export function DrawingCanvas({
 
   const handleGenerate = async () => {
     if (!editor) return;
-
-    // Save current state before generating
-    try {
-      persistedSnapshot = editor.store.allRecords();
-    } catch (error) {
-      console.error('Error saving canvas state:', error);
-    }
 
     try {
       // Get all shapes from the canvas
@@ -57,8 +52,20 @@ export function DrawingCanvas({
       // Convert png blob to data URL
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64data = reader.result as string;
-        onGenerate(base64data);
+        const currentCanvasData = reader.result as string;
+        
+        // Call onGenerate with both current and previous canvas data
+        onGenerate(currentCanvasData, previousCanvasData || undefined);
+        
+        // Update previous canvas data for next comparison
+        previousCanvasData = currentCanvasData;
+        
+        // Save current state after generating
+        try {
+          persistedSnapshot = editor.store.allRecords();
+        } catch (error) {
+          console.error('Error saving canvas state:', error);
+        }
       };
       reader.readAsDataURL(png.blob);
     } catch (error) {

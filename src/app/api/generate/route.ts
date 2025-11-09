@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
+import { detectCanvasChanges, CanvasChange } from "@/lib/canvasUtils";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY || "",
@@ -148,6 +149,7 @@ export const maxDuration = 60; // Maximum function duration in seconds
 
 interface GenerateRequestBody {
   imageBase64: string;
+  previousImageBase64?: string;  // Add this field for previous canvas data
   previousCode?: string;
   prompt?: string;
 }
@@ -155,13 +157,21 @@ interface GenerateRequestBody {
 export async function POST(req: NextRequest) {
   try {
     const body: GenerateRequestBody = await req.json();
-    const { imageBase64, previousCode, prompt } = body;
+    const { imageBase64, previousImageBase64, previousCode, prompt } = body;
 
-    if(previousCode){
-      console.log("HERE IS THE LOGS::", previousCode);
+    // Detect canvas changes if we have previous data
+    let detectedChanges: CanvasChange[] = [];
+    if (previousImageBase64) {
+      detectedChanges = detectCanvasChanges(previousImageBase64, imageBase64);
+      console.log("Detected canvas changes:", detectedChanges);
     }
-    if(!previousCode){
-      console.log("No previous code provided.");
+
+    // Log states
+    if(previousCode) {
+      console.log("Previous code found:", previousCode.substring(0, 100) + "...");
+    }
+    if(detectedChanges.length > 0) {
+      console.log("Canvas changes detected:", detectedChanges);
     }
 
     if (!imageBase64) {

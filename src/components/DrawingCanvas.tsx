@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Tldraw, Editor, TLRecord } from "tldraw";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, Maximize2, Minimize2, Wand2, Briefcase } from "lucide-react";
 import { detectCanvasChanges } from "@/lib/canvasUtils";
+import { GenerationMode } from "@/app/page";
 import "tldraw/tldraw.css";
 
 interface DrawingCanvasProps {
@@ -13,6 +14,8 @@ interface DrawingCanvasProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   disableShortcuts?: boolean;
+  mode: GenerationMode;
+  onModeChange: (mode: GenerationMode) => void;
 }
 
 // Store canvas states outside component to persist across remounts
@@ -25,6 +28,8 @@ export function DrawingCanvas({
   isFullscreen,
   onToggleFullscreen,
   disableShortcuts = false,
+  mode,
+  onModeChange,
 }: DrawingCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
 
@@ -166,7 +171,39 @@ export function DrawingCanvas({
       </div>
 
       {/* Generate Button */}
-      <div className="p-4 bg-card border-t border-border">
+      <div className="p-4 bg-card border-t border-border space-y-3">
+        {/* Mode Selector */}
+        <div className="flex gap-2">
+          <Button
+            variant={mode === "strict" ? "default" : "outline"}
+            onClick={() => onModeChange("strict")}
+            disabled={isGenerating}
+            className="flex-1 text-sm"
+            size="sm"
+          >
+            <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+            Strict
+          </Button>
+          <Button
+            variant={mode === "professional" ? "default" : "outline"}
+            onClick={() => onModeChange("professional")}
+            disabled={isGenerating}
+            className="flex-1 text-sm"
+            size="sm"
+          >
+            <Briefcase className="h-3.5 w-3.5 mr-1.5" />
+            Professional
+          </Button>
+        </div>
+
+        {/* Mode Description */}
+        <p className="text-xs text-muted-foreground text-center">
+          {mode === "strict" 
+            ? "Recreates your drawing exactly as-is" 
+            : "Converts sketch to professional website"}
+        </p>
+
+        {/* Generate Button */}
         <Button
           onClick={handleGenerate}
           disabled={isGenerating}
@@ -181,7 +218,7 @@ export function DrawingCanvas({
           ) : (
             <>
               <Sparkles className="h-4 w-4 mr-2" />
-              Generate Website
+              Generate {mode === "strict" ? "Drawing" : "Website"}
             </>
           )}
         </Button>

@@ -9,6 +9,8 @@ import { PreviewPanel, SelectedElement } from "@/components/PreviewPanel";
 import { ElementEditor } from "@/components/ElementEditor";
 import { toast } from "sonner";
 
+export type GenerationMode = "strict" | "professional";
+
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState("");
   const [canvasData, setCanvasData] = useState("");
@@ -17,6 +19,7 @@ export default function Home() {
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
   const [isEditorFocused, setIsEditorFocused] = useState(false);
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("professional");
 
   // Element editing state
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
@@ -43,7 +46,8 @@ export default function Home() {
           imageBase64: currentCanvasData,
           previousImageBase64: previousCanvasData,
           previousCode: htmlCode || undefined,
-          prompt: prompt.trim() || undefined
+          prompt: prompt.trim() || undefined,
+          mode: generationMode
         }),
       });
 
@@ -183,6 +187,8 @@ export default function Home() {
                     isFullscreen={canvasFullscreen}
                     onToggleFullscreen={() => setCanvasFullscreen(false)}
                     disableShortcuts={isEditorFocused}
+                    mode={generationMode}
+                    onModeChange={setGenerationMode}
                   />
                 </div>
                 <div className="w-full px-4 pb-4">
@@ -218,6 +224,8 @@ export default function Home() {
                     isFullscreen={canvasFullscreen}
                     onToggleFullscreen={() => setCanvasFullscreen(true)}
                     disableShortcuts={isEditorFocused}
+                    mode={generationMode}
+                    onModeChange={setGenerationMode}
                   />
                 </div>
                 {/* Prompt Input */}

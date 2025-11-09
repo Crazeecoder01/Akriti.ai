@@ -326,6 +326,8 @@ Unlike traditional website builders that use pre-made templates, Akriti.ai uses 
 ### Prerequisites
 - Node.js 20+ installed
 - npm or yarn package manager
+- Google AI API key (for Gemini AI)
+- Tldraw license key (for production deployment)
 
 ### Installation
 
@@ -340,12 +342,37 @@ cd akriti.ai
 npm install
 ```
 
-3. Run the development server:
+3. Set up environment variables:
+
+Create a `.env.local` file in the root directory and add the following:
+
+```bash
+# Google AI API Key (required)
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Tldraw License Key for production deployment (required)
+NEXT_PUBLIC_TL_DRAW_LICENSE_KEY=your_tldraw_license_key_here
+```
+
+> **Note**: You can use the `.env.example` file as a template.
+
+4. Run the development server:
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GOOGLE_API_KEY` | Your Google AI API key for Gemini AI | Yes |
+| `NEXT_PUBLIC_TL_DRAW_LICENSE_KEY` | Tldraw license key for production | Yes (for production) |
+
+**How to get API keys:**
+- **Google AI API Key**: Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+- **Tldraw License Key**: Get from [Tldraw](https://tldraw.dev) for production deployments
 
 ---
 

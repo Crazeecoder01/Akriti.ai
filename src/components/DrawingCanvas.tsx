@@ -149,6 +149,7 @@ export function DrawingCanvas({
       {/* Canvas */}
       <div className="flex-1 relative">
         <Tldraw
+          licenseKey={process.env.NEXT_PUBLIC_TL_DRAW_LICENSE_KEY}
           onMount={(editor) => {
             setEditor(editor);
             // Restore the previous state if it exists

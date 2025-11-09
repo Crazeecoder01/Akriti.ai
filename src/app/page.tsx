@@ -15,10 +15,19 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
-  
+  const [isEditorFocused, setIsEditorFocused] = useState(false);
+
   // Element editing state
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
   const [isEditingElement, setIsEditingElement] = useState(false);
+
+  const handleCodeChange = (newCode: string) => {
+    setHtmlCode(newCode);
+  };
+
+  const handleEditorFocusChange = (isFocused: boolean) => {
+    setIsEditorFocused(isFocused);
+  };
 
   const handleGenerate = async (currentCanvasData: string, previousCanvasData?: string) => {
     setIsGenerating(true);
@@ -165,6 +174,7 @@ export default function Home() {
                     isGenerating={isGenerating}
                     isFullscreen={canvasFullscreen}
                     onToggleFullscreen={() => setCanvasFullscreen(false)}
+                    disableShortcuts={isEditorFocused}
                   />
                 </div>
                 <div className="w-full px-4 pb-4">
@@ -184,6 +194,8 @@ export default function Home() {
                 isFullscreen={previewFullscreen}
                 onToggleFullscreen={() => setPreviewFullscreen(false)}
                 onElementSelected={handleElementSelected}
+                onCodeChange={handleCodeChange}
+                onEditorFocusChange={handleEditorFocusChange}
               />
             )}
           </div>
@@ -197,6 +209,7 @@ export default function Home() {
                     isGenerating={isGenerating}
                     isFullscreen={canvasFullscreen}
                     onToggleFullscreen={() => setCanvasFullscreen(true)}
+                    disableShortcuts={isEditorFocused}
                   />
                 </div>
                 {/* Prompt Input */}
@@ -221,8 +234,10 @@ export default function Home() {
                   isFullscreen={previewFullscreen}
                   onToggleFullscreen={() => setPreviewFullscreen(true)}
                   onElementSelected={handleElementSelected}
+                  onCodeChange={handleCodeChange}
+                  onEditorFocusChange={handleEditorFocusChange}
                 />
-                
+
                 {/* Element Editor Overlay */}
                 {selectedElement && (
                   <ElementEditor

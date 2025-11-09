@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Code2, Eye, Maximize2, Minimize2, Loader2, Copy, Check, MousePointerClick } from "lucide-react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import Editor from "@monaco-editor/react";
 import { toast } from "sonner";
 import { getInspectorScript } from "@/lib/element-inspector";
 
@@ -21,6 +20,8 @@ interface PreviewPanelProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onElementSelected?: (element: SelectedElement) => void;
+  onCodeChange?: (code: string) => void;
+  onEditorFocusChange?: (isFocused: boolean) => void;
 }
 
 export function PreviewPanel({
@@ -29,18 +30,28 @@ export function PreviewPanel({
   isFullscreen,
   onToggleFullscreen,
   onElementSelected,
+  onCodeChange,
+  onEditorFocusChange,
 }: PreviewPanelProps) {
   const [showCode, setShowCode] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isInspectorActive, setIsInspectorActive] = useState(false);
+  const [isEditorFocused, setIsEditorFocused] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Notify parent when editor focus changes
+  useEffect(() => {
+    if (onEditorFocusChange) {
+      onEditorFocusChange(isEditorFocused && showCode);
+    }
+  }, [isEditorFocused, showCode, onEditorFocusChange]);
 
   // Inject inspector script into HTML
   const getEnhancedHtml = (html: string) => {
     if (!html) return html;
-    
+
     const inspectorScript = getInspectorScript();
-    
+
     // Inject before closing body tag, or at the end if no body tag
     if (html.includes('</body>')) {
       return html.replace('</body>', `${inspectorScript}</body>`);
@@ -58,7 +69,7 @@ export function PreviewPanel({
           toast.success("Element selected!");
         }
       }
-      
+
       if (event.data.type === 'INSPECTOR_STATE_CHANGED') {
         setIsInspectorActive(event.data.active);
       }
@@ -81,7 +92,7 @@ export function PreviewPanel({
 
   const handleCopy = async () => {
     if (!htmlCode) return;
-    
+
     try {
       await navigator.clipboard.writeText(htmlCode);
       setIsCopied(true);
@@ -172,19 +183,38 @@ export function PreviewPanel({
             </div>
           </div>
         ) : showCode ? (
-          <div className="h-full overflow-auto">
-            <SyntaxHighlighter
-              language="html"
-              style={vscDarkPlus}
-              customStyle={{
-                margin: 0,
-                height: "100%",
-                fontSize: "14px",
+          <div className="h-full overflow-hidden">
+            <Editor
+              height="100%"
+              defaultLanguage="html"
+              value={htmlCode}
+              onChange={(value) => {
+                if (value !== undefined && onCodeChange) {
+                  onCodeChange(value);
+                }
               }}
-              showLineNumbers
-            >
-              {htmlCode}
-            </SyntaxHighlighter>
+              onMount={(editor) => {
+                // Handle focus state
+                editor.onDidFocusEditorText(() => {
+                  setIsEditorFocused(true);
+                });
+                editor.onDidBlurEditorText(() => {
+                  setIsEditorFocused(false);
+                });
+              }}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: true },
+                fontSize: 14,
+                lineNumbers: "on",
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 2,
+                wordWrap: "on",
+                formatOnPaste: true,
+                formatOnType: true,
+              }}
+            />
           </div>
         ) : (
           <iframe

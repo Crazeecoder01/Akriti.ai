@@ -12,6 +12,7 @@ interface DrawingCanvasProps {
   isGenerating: boolean;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  disableShortcuts?: boolean;
 }
 
 // Store canvas states outside component to persist across remounts
@@ -23,8 +24,29 @@ export function DrawingCanvas({
   isGenerating,
   isFullscreen,
   onToggleFullscreen,
+  disableShortcuts = false,
 }: DrawingCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
+
+  // Disable tldraw shortcuts when editor is focused
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (disableShortcuts) {
+        // Stop propagation to prevent tldraw from receiving keyboard events
+        e.stopPropagation();
+      }
+    };
+
+    if (disableShortcuts) {
+      window.addEventListener('keydown', handleKeyDown, true);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [editor, disableShortcuts]);
 
   const handleGenerate = async () => {
     if (!editor) return;
@@ -53,13 +75,13 @@ export function DrawingCanvas({
       const reader = new FileReader();
       reader.onloadend = () => {
         const currentCanvasData = reader.result as string;
-        
+
         // Call onGenerate with both current and previous canvas data
         onGenerate(currentCanvasData, previousCanvasData || undefined);
-        
+
         // Update previous canvas data for next comparison
         previousCanvasData = currentCanvasData;
-        
+
         // Save current state after generating
         try {
           persistedSnapshot = editor.store.allRecords();

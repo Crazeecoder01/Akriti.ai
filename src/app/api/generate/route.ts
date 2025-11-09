@@ -51,11 +51,11 @@ const ai = new GoogleGenAI({
 //    - If rough/simple sketch → Create professional, polished version
 //    - Improve spacing, alignment, and visual hierarchy
 //    - Add subtle animations and hover effects for modern feel
-   
+
 // 2. **Responsive by default:**
 //    - Mobile-first approach with Tailwind breakpoints
 //    - Ensure all layouts work on mobile, tablet, and desktop
-   
+
 // 3. **Context-appropriate sections:**
 //    - Hero section with CTA if it's a landing page
 //    - Navigation that matches the site type
@@ -91,11 +91,69 @@ const ai = new GoogleGenAI({
 
 // Next.js 16 App Router - increase body size limit
 
-const getSystemPrompt = (previousCode?: string, prompt?: string, mode: "strict" | "professional" = "professional") => `
+const getSystemPrompt = (
+  previousCode?: string,
+  prompt?: string,
+  mode: "strict" | "professional" | "creative" = "professional"
+) => {
+  const creativePrompt = `
 You are an expert Product Designer and Frontend Engineer (React/Tailwind).
-Your goal is to translate ${previousCode ? 'user feedback on an existing design' : 'a rough sketch/screenshot'} into a polished, production-ready ${mode === "strict" ? "HTML recreation of the exact drawing" : "landing page that feels like a real, live product"}.
+Your goal is to translate ${previousCode ? 'user feedback on an existing design' : 'a rough sketch/screenshot'} into a polished, production-ready landing page that feels like a real, live product.
 
-${mode === "strict" ? `
+*CRITICAL INSTRUCTION: INTERPRETATION OVER TRANSCRIPTION*
+- Do NOT just "digitize" the sketch. Upgrade it.
+- If the sketch is messy, standardise it into a professional layout.
+- If text is illegible, infer it based on the perceived industry context.
+- *NEVER draw placeholder boxes.* Always use real components (working inputs, real images, actual buttons).
+
+${previousCode ? `
+EXISTING CODE TO MODIFY:
+${previousCode}
+MAINTAIN EXISTING STRUCTURE, ONLY APPLY REQUESTED CHANGES.
+` : ''}
+
+---
+
+### PHASE 1: DEEP CONTEXTUAL ANALYSIS (INTERNAL)
+Before coding, analyze the image to determine:
+1.  *Industry/Niche:* (e.g., SaaS, E-commerce, Medical, Food Delivery). Look for keywords like "save time", "buy now", "healthy".
+2.  *Brand Personality:* (e.g., Playful & colorful vs. Serious & corporate).
+3.  *Missing Elements:* What would a real site in this niche have that the sketch missed? (e.g., a Navbar, Testimonials, Footer, Pricing). *Add them.*
+
+### PHASE 2: ASSET GENERATION PROTOCOL (STRICT)
+You MUST use realistic images that match the inferred context.
+*Use strictly this format for images:*
+https://image.pollinations.ai/prompt/{DESCRIPTION}?width={W}&height={H}&nologo=true
+
+- *Hero Backgrounds:* .../prompt/professional%20hero%20image%20for%20{industry}%20website?width=1920&height=1080...
+- *Product Images:* .../prompt/clean%20studio%20shot%20of%20{product_name}?width=800&height=600...
+- *User Avatars:* .../prompt/professional%20headshot%20of%20a%20person?width=200&height=200...
+- *Logos (If generic):* Use a stylish text-based logo using standard fonts if no recognizable brand is present.
+- *Icons:* Use Lucide icons via SVG. Example: <svg xmlns="http://www.w3.org/2000/svg" ...>
+
+### PHASE 3: CODING STANDARDS (TAILWIND)
+- *Output:* A single, complete <!DOCTYPE html> file.
+- *Styling:* Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>.
+- *Design System:*
+    - Define a tailwind.config in a script tag for brand colors inferred from the drawing (or sensible defaults for the niche).
+    - Use inter or poppins fonts via Google Fonts.
+- *Interactivity:*
+    - Ensure all buttons have hover states (hover:bg-blue-700).
+    - Make the navbar responsive (mobile hamburger menu) using vanilla JS if needed.
+- *Layout:* Use flex, grid, and standard container padding (container mx-auto px-4).
+
+---
+
+${prompt ? `USER OVERRIDE REQUIREMENTS: ${prompt}` : ''}
+
+*FINAL OUTPUT GENERATION:*
+Generate the complete HTML file now. It should look like it cost $5,000 to design.
+`;
+
+  const strictPrompt = `
+You are an expert Product Designer and Frontend Engineer (React/Tailwind).
+Your goal is to translate ${previousCode ? 'user feedback on an existing design' : 'a rough sketch/screenshot'} into a polished, production-ready HTML recreation of the exact drawing.
+
 **🎨 STRICT MODE - SIMPLE & FAITHFUL**
 
 Your task is to create a SIMPLE representation of what was drawn, with minimal interpretation.
@@ -188,8 +246,12 @@ Apply the requested changes while maintaining the simple, creative style.
 ` : ''}
 
 ${prompt ? `USER REQUIREMENTS: ${prompt}` : ''}
+`;
 
-` : `
+  const professionalPrompt = `
+You are an expert Product Designer and Frontend Engineer (React/Tailwind).
+Your goal is to translate ${previousCode ? 'user feedback on an existing design' : 'a rough sketch/screenshot'} into a polished, production-ready landing page that feels like a real, live product.
+
 **🚨 CRITICAL FIRST STEP: INTENT DETECTION**
 
 Before doing ANYTHING, determine the PRIMARY INTENT of the drawing:
@@ -292,8 +354,18 @@ ${prompt ? `USER OVERRIDE REQUIREMENTS: ${prompt}` : ''}
 
 **FINAL OUTPUT GENERATION:**
 Generate the complete HTML file now. ${previousCode ? 'Apply only the requested changes.' : 'First detect intent (Type A or B), then generate accordingly. If Type B, it should look like it cost $5,000 to design.'}
-`}
 `;
+
+  if (mode === "strict") {
+    return strictPrompt;
+  }
+
+  if (mode === "creative") {
+    return creativePrompt;
+  }
+
+  return professionalPrompt;
+};
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Maximum function duration in seconds
 
@@ -302,7 +374,7 @@ interface GenerateRequestBody {
   previousImageBase64?: string;  // Add this field for previous canvas data
   previousCode?: string;
   prompt?: string;
-  mode?: "strict" | "professional";
+  mode?: "strict" | "professional" | "creative";
 }
 
 export async function POST(req: NextRequest) {
@@ -318,10 +390,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Log states
-    if(previousCode) {
+    if (previousCode) {
       console.log("Previous code found:", previousCode.substring(0, 100) + "...");
     }
-    if(detectedChanges.length > 0) {
+    if (detectedChanges.length > 0) {
       console.log("Canvas changes detected:", detectedChanges);
     }
 
@@ -335,7 +407,7 @@ export async function POST(req: NextRequest) {
     // Extract mime type and base64 data properly
     const mimeTypeMatch = imageBase64.match(/^data:([^;]+);base64,/);
     const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/png";
-    
+
     // Remove the data URI prefix completely (handles both image/png and image/svg+xml)
     const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, "");
 
@@ -361,7 +433,7 @@ export async function POST(req: NextRequest) {
     }
 
     let cleanCode = text;
-    
+
     // Remove markdown code fences if present
     const codeBlockRegex = /```(?:html)?\n?([\s\S]*?)```/;
     const match = text.match(codeBlockRegex);
@@ -383,7 +455,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("❌ Generative AI Error:", error);
-    
+
     return NextResponse.json(
       { error: 'Failed to generate code. The AI might be busy or the image is too complex.' },
       { status: 500 }

@@ -9,7 +9,7 @@ import { PreviewPanel, SelectedElement } from "@/components/PreviewPanel";
 import { ElementEditor } from "@/components/ElementEditor";
 import { toast } from "sonner";
 
-export type GenerationMode = "strict" | "professional";
+export type GenerationMode = "strict" | "professional" | "creative";
 
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState("");

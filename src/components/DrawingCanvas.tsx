@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Tldraw, Editor, TLRecord } from "tldraw";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Maximize2, Minimize2, Wand2, Briefcase } from "lucide-react";
+import { Sparkles, Maximize2, Minimize2, Wand2, Briefcase, Paintbrush } from "lucide-react";
 import { detectCanvasChanges } from "@/lib/canvasUtils";
 import { GenerationMode } from "@/app/page";
 import "tldraw/tldraw.css";
@@ -194,13 +194,25 @@ export function DrawingCanvas({
             <Briefcase className="h-3.5 w-3.5 mr-1.5" />
             Professional
           </Button>
+          <Button
+            variant={mode === "creative" ? "default" : "outline"}
+            onClick={() => onModeChange("creative")}
+            disabled={isGenerating}
+            className="flex-1 text-sm"
+            size="sm"
+          >
+            <Paintbrush className="h-3.5 w-3.5 mr-1.5" />
+            Creative
+          </Button>
         </div>
 
         {/* Mode Description */}
         <p className="text-xs text-muted-foreground text-center">
-          {mode === "strict" 
-            ? "Recreates your drawing exactly as-is" 
-            : "Converts sketch to professional website"}
+          {mode === "strict"
+            ? "Recreates your drawing exactly as-is"
+            : mode === "professional"
+              ? "Converts sketch to professional website"
+              : "Interprets sketch into a creative, polished design"}
         </p>
 
         {/* Generate Button */}

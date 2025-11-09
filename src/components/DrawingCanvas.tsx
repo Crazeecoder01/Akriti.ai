@@ -61,17 +61,17 @@ export function DrawingCanvas({
       }
 
       // Export the canvas as png and convert to image
-      const png = await editor.toImage(shapes, {
+      const jpeg = await editor.toImage(shapes, {
         background: true,
-        format: "png",
+        format: "jpeg",
         scale: 2
       })
 
-      if (!png) {
+      if (!jpeg) {
         throw new Error("Failed to export canvas");
       }
 
-      // Convert png blob to data URL
+      // Convert jpeg blob to data URL
       const reader = new FileReader();
       reader.onloadend = () => {
         const currentCanvasData = reader.result as string;
@@ -89,7 +89,7 @@ export function DrawingCanvas({
           console.error('Error saving canvas state:', error);
         }
       };
-      reader.readAsDataURL(png.blob);
+      reader.readAsDataURL(jpeg.blob);
     } catch (error) {
       console.error("Error exporting canvas:", error);
       alert("Failed to export canvas. Please try again.");
@@ -101,12 +101,26 @@ export function DrawingCanvas({
     if (editor) {
       try {
         persistedSnapshot = editor.store.allRecords();
+        console.log('Saved canvas state:', persistedSnapshot.length, 'records');
       } catch (error) {
         console.error('Error saving canvas state:', error);
       }
     }
     onToggleFullscreen();
   };
+
+  // Save canvas state when component unmounts
+  useEffect(() => {
+    return () => {
+      if (editor) {
+        try {
+          persistedSnapshot = editor.store.allRecords();
+        } catch (error) {
+          console.error('Error saving canvas state on unmount:', error);
+        }
+      }
+    };
+  }, [editor]);
 
   return (
     <div className="h-full flex flex-col bg-card rounded-lg border border-border overflow-hidden">
@@ -135,7 +149,13 @@ export function DrawingCanvas({
             // Restore the previous state if it exists
             if (persistedSnapshot && persistedSnapshot.length > 0) {
               try {
-                editor.store.put(persistedSnapshot);
+                // Use setTimeout to ensure editor is fully initialized
+                setTimeout(() => {
+                  if (persistedSnapshot) {
+                    editor.store.put(persistedSnapshot);
+                    console.log('Restored canvas state:', persistedSnapshot.length, 'records');
+                  }
+                }, 50);
               } catch (error) {
                 console.error('Error restoring canvas state:', error);
               }
